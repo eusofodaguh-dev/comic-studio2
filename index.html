@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Comic Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070f;--s1:#0d0d1a;--s2:#131320;--s3:#1a1a2a;--s4:#222236;
+  --b1:rgba(255,255,255,0.05);--b2:rgba(255,255,255,0.10);--b3:rgba(255,255,255,0.18);
+  --txt:#dcdcf0;--muted:#5a5a90;--dim:#303050;
+  --red:#b03020;--red2:#e05040;--blue:#1a5f8a;--blue2:#4aa0d0;
+  --gold:#c89010;--gold2:#e8b030;--green:#166040;--green2:#40c070;
+  --purple:#6030a0;--r:14px;--r2:10px;--r3:7px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Space Grotesk',sans-serif;font-size:14px;overflow:hidden}
+
+/* APP SHELL */
+.app{display:flex;flex-direction:column;height:100dvh}
+.screen{flex:1;overflow-y:auto;overflow-x:hidden}
+.screen::-webkit-scrollbar{width:3px}
+.screen::-webkit-scrollbar-thumb{background:var(--s4);border-radius:99px}
+
+/* PHASE HEADER */
+.phase-bar{background:var(--s1);border-bottom:1px solid var(--b2);padding:12px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.phase-steps{display:flex;gap:6px;flex:1}
+.phase-step{flex:1;height:3px;border-radius:99px;background:var(--s4);transition:background .3s}
+.phase-step.done{background:var(--green2)}
+.phase-step.active{background:var(--gold)}
+.phase-label{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);white-space:nowrap}
+
+/* TOP BAR */
+.topbar{padding:14px 16px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}
+.tb-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;line-height:1.1}
+.tb-title span{color:var(--red2)}
+.tb-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:3px}
+
+/* CONTENT AREA */
+.content{padding:14px 16px;padding-bottom:80px}
+
+/* CHAT */
+.chat-area{display:flex;flex-direction:column;gap:10px;padding:14px 16px 8px}
+.bubble{border-radius:var(--r2);padding:12px 14px;font-size:13px;line-height:1.65;max-width:96%}
+.bubble-ai{background:var(--s2);border:1px solid var(--b1);align-self:flex-start;border-bottom-left-radius:3px}
+.bubble-user{background:rgba(26,95,138,.18);border:1px solid rgba(26,95,138,.28);align-self:flex-end;border-bottom-right-radius:3px}
+.bubble .bub-label{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:5px}
+.bubble b{color:var(--gold2)}
+.bubble em{color:var(--blue2);font-style:normal}
+
+/* CHAT INPUT */
+.chat-input-bar{padding:10px 14px;background:var(--bg);border-top:1px solid var(--b1);display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+.chat-input-bar textarea{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:10px 12px;color:var(--txt);font-family:'Space Grotesk',sans-serif;font-size:13px;resize:none;outline:none;max-height:110px;min-height:42px;line-height:1.5;transition:border-color .2s}
+.chat-input-bar textarea:focus{border-color:var(--blue2)}
+.send-btn{width:42px;height:42px;border-radius:var(--r2);background:var(--red);border:none;color:#fff;font-size:17px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.send-btn:active{background:var(--red2)}
+.send-btn.loading{background:var(--s4);pointer-events:none}
+
+/* PHASE ACTIONS */
+.phase-action-bar{padding:10px 16px;background:var(--bg);border-top:1px solid var(--b1);flex-shrink:0}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.card-title{font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+
+/* OPTIONS CARDS */
+.option-card{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer;transition:all .2s;position:relative}
+.option-card:active,.option-card.selected{border-color:var(--gold);background:rgba(200,144,16,.07)}
+.opt-num{width:26px;height:26px;border-radius:50%;background:var(--s4);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--muted);flex-shrink:0;transition:all .2s}
+.option-card.selected .opt-num{background:var(--gold);color:#1a0a00;border-color:var(--gold)}
+.opt-title{font-weight:600;font-size:14px;margin-bottom:4px}
+.opt-climate{font-size:12px;color:var(--blue2);margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+.opt-desc{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:8px}
+.opt-layout{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+
+/* CHAR CARDS */
+.char-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:12px 14px;margin-bottom:8px}
+.char-name{font-weight:600;font-size:15px}
+.char-role{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:1px}
+.char-feet-badge{display:inline-flex;align-items:center;gap:4px;margin-top:7px;font-size:11px;padding:3px 8px;border-radius:99px}
+.cfb-ok{background:rgba(22,96,64,.25);color:var(--green2);border:1px solid rgba(22,96,64,.4)}
+.cfb-warn{background:rgba(176,48,32,.2);color:var(--red2);border:1px solid rgba(176,48,32,.3)}
+
+/* PROMPT OUTPUT */
+.prompt-output-box{background:var(--bg);border:1px solid var(--b2);border-radius:var(--r);padding:14px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.75;color:#a0c0d8;white-space:pre-wrap;word-break:break-word;max-height:420px;overflow-y:auto;margin-bottom:10px}
+
+/* WORD PILL */
+.word-pill{display:inline-flex;align-items:center;padding:3px 9px;border-radius:99px;font-size:11px;font-family:'JetBrains Mono',monospace;font-weight:500}
+.wp-ok{background:rgba(22,96,64,.2);color:var(--green2);border:1px solid rgba(22,96,64,.3)}
+.wp-warn{background:rgba(200,144,16,.2);color:var(--gold2);border:1px solid rgba(200,144,16,.3)}
+.wp-over{background:rgba(176,48,32,.2);color:var(--red2);border:1px solid rgba(176,48,32,.3)}
+
+/* FORMS */
+.field{margin-bottom:11px}
+.field label{display:block;font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-family:'JetBrains Mono',monospace;margin-bottom:5px}
+.field input,.field select,.field textarea{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r3);padding:9px 11px;color:var(--txt);font-size:13px;font-family:'Space Grotesk',sans-serif;outline:none;transition:border-color .2s;-webkit-appearance:none}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue2)}
+.field textarea{resize:vertical;min-height:65px;line-height:1.5}
+.field select option{background:var(--s2)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:10px 16px;border-radius:var(--r2);font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:'Space Grotesk',sans-serif;transition:all .15s;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn-red{background:var(--red);color:#fff}.btn-red:active{background:var(--red2)}
+.btn-gold{background:var(--gold);color:#1a0a00}.btn-gold:active{background:var(--gold2)}
+.btn-green{background:var(--green);color:#fff}.btn-green:active{background:#1e7a50}
+.btn-blue{background:var(--blue);color:#fff}.btn-blue:active{background:var(--blue2)}
+.btn-ghost{background:none;color:var(--muted);border:1px solid var(--b2)}.btn-ghost:active{background:var(--s3);color:var(--txt)}
+.btn-surface{background:var(--s3);color:var(--txt);border:1px solid var(--b1)}.btn-surface:active{background:var(--s4)}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:var(--r3)}
+.btn-full{width:100%}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;display:flex;align-items:flex-end}
+.modal-sheet{background:var(--s1);border-radius:var(--r) var(--r) 0 0;width:100%;max-height:92dvh;overflow-y:auto;padding:18px 16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0))}
+.modal-handle{width:34px;height:3px;background:var(--dim);border-radius:99px;margin:0 auto 14px}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;margin-bottom:14px}
+.modal-footer{display:flex;gap:8px;margin-top:16px}
+
+/* STORY LIST */
+.story-item{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.story-item:active{border-color:var(--b3)}
+.si-title{font-weight:600;font-size:14px;margin-bottom:3px}
+.si-meta{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.si-status{display:inline-flex;align-items:center;padding:2px 7px;border-radius:99px;font-size:10px;font-family:'JetBrains Mono',monospace;margin-top:5px}
+.sis-active{background:rgba(22,96,64,.2);color:var(--green2);border:1px solid rgba(22,96,64,.3)}
+.sis-draft{background:rgba(200,144,16,.15);color:var(--gold);border:1px solid rgba(200,144,16,.25)}
+
+/* PAGE HISTORY */
+.page-hist-item{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:10px 12px;margin-bottom:6px}
+.phi-pg{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)}
+.phi-desc{font-size:13px;font-weight:500;margin:2px 0}
+.phi-words{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+
+/* IMAGE UPLOAD */
+.img-upload-zone{border:1.5px dashed var(--b3);border-radius:var(--r2);padding:24px;text-align:center;cursor:pointer;transition:border-color .2s}
+.img-upload-zone:active{border-color:var(--blue2)}
+.img-preview{width:100%;border-radius:var(--r2);margin-top:10px;max-height:200px;object-fit:cover}
+
+/* TOAST */
+.toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--s3);border:1px solid var(--b2);border-radius:var(--r2);padding:9px 16px;font-size:13px;z-index:200;opacity:0;transition:all .25s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-left:3px solid var(--green2)}
+.toast.err{border-left:3px solid var(--red2)}
+
+/* LOADING */
+.dots{display:inline-flex;gap:3px;align-items:center;padding:2px 0}
+.dots span{width:5px;height:5px;border-radius:50%;background:var(--blue2);animation:blink 1.3s infinite}
+.dots span:nth-child(2){animation-delay:.2s}
+.dots span:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.25}40%{opacity:1}}
+
+/* EMPTY */
+.empty-state{text-align:center;padding:44px 20px;color:var(--muted)}
+.empty-state .ei{font-size:34px;margin-bottom:10px}
+.empty-state h3{font-size:15px;color:var(--txt);margin-bottom:6px;font-family:'Cormorant Garamond',serif;font-weight:700}
+.empty-state p{font-size:12px;line-height:1.6}
+
+/* INFO BOX */
+.info-box{background:rgba(26,95,138,.08);border-left:3px solid var(--blue2);border-radius:0 var(--r3) var(--r3) 0;padding:9px 12px;font-size:12px;color:#80b0c8;line-height:1.6;margin-bottom:12px}
+
+/* SECTION DIVIDER */
+.sdiv{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--dim);text-transform:uppercase;letter-spacing:1px;padding:12px 0 8px;border-bottom:1px solid var(--b1);margin-bottom:10px}
+
+/* TAGS */
+.tag{display:inline-flex;align-items:center;padding:2px 7px;border-radius:99px;font-size:10px;font-family:'JetBrains Mono',monospace}
+.tg{background:var(--s4);color:var(--muted);border:1px solid var(--b1)}
+.tg-gold{background:rgba(200,144,16,.15);color:var(--gold2);border:1px solid rgba(200,144,16,.25)}
+.tg-blue{background:rgba(26,95,138,.18);color:var(--blue2);border:1px solid rgba(26,95,138,.28)}
+.tg-green{background:rgba(22,96,64,.18);color:var(--green2);border:1px solid rgba(22,96,64,.28)}
+.tg-red{background:rgba(176,48,32,.15);color:var(--red2);border:1px solid rgba(176,48,32,.25)}
+
+/* BOTTOM NAV */
+.bnav{position:fixed;bottom:0;left:0;right:0;height:62px;background:var(--s1);border-top:1px solid var(--b2);display:flex;align-items:stretch;z-index:50;padding-bottom:env(safe-area-inset-bottom,0)}
+.bni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--muted);font-size:10px;font-weight:500;cursor:pointer;border:none;background:none;transition:color .2s}
+.bni.on{color:var(--gold2)}
+.bni .ic{font-size:19px;line-height:1}
+
+/* MISC */
+.flex{display:flex}.fbc{display:flex;align-items:center;gap:8px}.fbetween{display:flex;justify-content:space-between;align-items:center}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}.gap8{gap:8px}
+.text-muted{color:var(--muted)}.text-sm{font-size:12px}.mono{font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+
+<!-- SETUP KEY -->
+<div id="v-setup" style="display:none;position:fixed;inset:0;background:#07070f;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;margin-bottom:4px">Comic<span style="color:#e05040">Studio</span></div>
+  <div style="font-size:11px;color:#5a5a90;font-family:'JetBrains Mono',monospace;margin-bottom:28px">production toolkit · 18+</div>
+  <div style="background:#0d0d1a;border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:20px;width:100%;max-width:380px">
+    <div style="font-size:15px;font-weight:600;margin-bottom:6px">🔑 API Key da Anthropic</div>
+    <div style="font-size:12px;color:#5a5a90;line-height:1.6;margin-bottom:14px">Necessária para a IA funcionar. Fica salva só no seu celular.<br>Obtenha em <b style="color:#4aa0d0">console.anthropic.com</b> → API Keys</div>
+    <input type="password" id="setup-key" placeholder="sk-ant-..." style="width:100%;background:#131320;border:1px solid rgba(255,255,255,.10);border-radius:8px;padding:11px 12px;color:#dcdcf0;font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;margin-bottom:12px"/>
+    <button onclick="saveSetupKey()" style="width:100%;background:#b03020;color:#fff;border:none;border-radius:9px;padding:12px;font-size:14px;font-weight:500;cursor:pointer;font-family:'Space Grotesk',sans-serif">Salvar e começar →</button>
+  </div>
+</div>
+<div class="app" id="app">
+
+  <!-- ═══════════════ HOME — STORY LIST ═══════════════ -->
+  <div id="view-home" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="topbar" style="padding-bottom:14px">
+      <div>
+        <div class="tb-title">Comic<span>Studio</span></div>
+        <div class="tb-sub">Suas histórias</div>
+      </div>
+      <button class="btn btn-red btn-sm" onclick="newStory()">+ Nova</button>
+    </div>
+    <div class="screen" style="padding:0 16px 80px">
+      <div id="story-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ STUDIO — ACTIVE STORY ═══════════════ -->
+  <div id="view-studio" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+
+    <!-- Phase bar -->
+    <div class="phase-bar">
+      <div class="phase-steps">
+        <div class="phase-step" id="ps-1"></div>
+        <div class="phase-step" id="ps-2"></div>
+        <div class="phase-step" id="ps-3"></div>
+        <div class="phase-step" id="ps-4"></div>
+      </div>
+      <div class="phase-label" id="phase-label">—</div>
+      <button class="btn btn-ghost btn-sm" onclick="goHome()" style="margin-left:8px">← Voltar</button>
+    </div>
+
+    <!-- Dynamic content per phase -->
+    <div class="screen" id="studio-screen">
+
+      <!-- PHASE 1: STORY DEVELOPMENT -->
+      <div id="phase-story" style="display:none">
+        <div class="topbar"><div><div class="tb-title" id="p1-title">Nova História</div><div class="tb-sub">Fase 1 — Desenvolvimento</div></div></div>
+        <div class="chat-area" id="chat-story"></div>
+      </div>
+
+      <!-- PHASE 2: CHARACTERS -->
+      <div id="phase-chars" style="display:none">
+        <div class="topbar"><div><div class="tb-title">Personagens</div><div class="tb-sub">Fase 2 — Elenco e Bíblia dos Pés</div></div><button class="btn btn-red btn-sm" onclick="openCharModal()">+ Novo</button></div>
+        <div class="content">
+          <div class="info-box">Adicione cada personagem. Para originais, faça upload da foto — a IA analisa e cria a Bíblia dos Pés. Para famosas, ela pesquisa automaticamente.</div>
+          <div id="char-list-phase2"></div>
+          <div class="sdiv">Figurinos</div>
+          <div id="outfit-section"></div>
+          <button class="btn btn-gold btn-full" style="margin-top:14px" onclick="completePhase2()">Personagens prontos — Iniciar produção →</button>
+        </div>
+      </div>
+
+      <!-- PHASE 3: PRODUCTION -->
+      <div id="phase-production" style="display:none">
+        <div class="topbar">
+          <div>
+            <div class="tb-title" id="p3-title">Produção</div>
+            <div class="tb-sub" id="p3-sub">Página 1</div>
+          </div>
+          <div class="fbc gap8">
+            <span class="word-pill wp-ok" id="prod-word-pill" style="display:none">—</span>
+            <button class="btn btn-surface btn-sm" onclick="showPageHistory()">📋 Hist.</button>
+          </div>
+        </div>
+        <div class="content">
+          <!-- Continuity from previous page -->
+          <div id="prev-page-summary" style="display:none" class="card">
+            <div class="card-title">📄 Continuidade da página anterior</div>
+            <div id="prev-page-content" class="text-sm text-muted" style="line-height:1.6"></div>
+          </div>
+
+          <!-- 3 Options or chat -->
+          <div id="production-chat"></div>
+
+          <!-- Generated prompt (shown after option chosen) -->
+          <div id="prompt-section" style="display:none">
+            <div class="sdiv">Prompt gerado — Página <span id="prompt-pg-num">—</span></div>
+            <div class="fbetween mb8">
+              <span id="prompt-word-pill" class="word-pill wp-ok">0 palavras</span>
+              <button class="btn btn-ghost btn-sm" id="prob-toggle" onclick="toggleFullProb()">+ Proibições completas</button>
+            </div>
+            <div id="prompt-output" class="prompt-output-box"></div>
+            <div class="fbc gap8" style="flex-wrap:wrap">
+              <button class="btn btn-green" onclick="copyPrompt()">📋 Copiar prompt</button>
+              <button class="btn btn-surface btn-sm" onclick="savePageAndContinue()">Salvar e próxima página →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Chat input bar (shown in phases 1 and 3) -->
+    <div id="chat-bar" class="chat-input-bar" style="display:none">
+      <textarea id="chat-input" placeholder="Digite aqui..." rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+
+    <!-- Phase 3 options action -->
+    <div id="options-action-bar" class="phase-action-bar" style="display:none">
+      <button class="btn btn-gold btn-full" onclick="confirmOption()">Gerar prompt com opção escolhida →</button>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ════════════════ CHARACTER MODAL ════════════════ -->
+<div id="modal-char" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal('modal-char')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-char-title">Novo Personagem</div>
+
+    <div class="row2">
+      <div class="field"><label>Nome</label><input type="text" id="cn" placeholder="Ex: Lara" /></div>
+      <div class="field"><label>Tipo</label>
+        <select id="ct" onchange="toggleCharType()">
+          <option value="original">Original (modelo próprio)</option>
+          <option value="famous">Famosa / Atriz</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="famous-field" style="display:none" class="field">
+      <label>Nome completo da famosa</label>
+      <input type="text" id="cfamous" placeholder="Ex: Sydney Sweeney, Ester Expósito" />
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">A IA pesquisará os pés reais desta pessoa automaticamente</div>
+    </div>
+
+    <div id="original-field">
+      <div class="field">
+        <label>Foto de referência</label>
+        <div class="img-upload-zone" onclick="document.getElementById('ref-img').click()">
+          <div style="font-size:24px;margin-bottom:6px">📸</div>
+          <div style="font-size:13px;color:var(--muted)">Toque para fazer upload</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:3px">A IA analisará os pés desta imagem</div>
+        </div>
+        <input type="file" id="ref-img" accept="image/*" style="display:none" onchange="handleImageUpload(event)" />
+        <img id="ref-preview" class="img-preview" style="display:none" />
+      </div>
+    </div>
+
+    <div class="field"><label>Papel na história</label>
+      <select id="crole">
+        <option value="protagonista">Protagonista</option>
+        <option value="antagonista">Antagonista</option>
+        <option value="apoio">Apoio principal</option>
+        <option value="secundária">Secundária</option>
+      </select>
+    </div>
+
+    <div class="field"><label>Tom emocional</label>
+      <input type="text" id="ctone" placeholder="Ex: reservada, calculista, vulnerável" />
+    </div>
+
+    <div id="feet-loading" style="display:none" class="card" style="text-align:center;padding:16px">
+      <div class="fbc gap8" style="justify-content:center">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span class="text-sm text-muted">Analisando pés...</span>
+      </div>
+    </div>
+
+    <div id="feet-result" style="display:none">
+      <div class="sdiv">Bíblia dos Pés — gerada pela IA</div>
+      <div id="feet-result-content" class="card" style="font-size:12px;line-height:1.7;color:var(--muted)"></div>
+      <div class="field" style="margin-top:10px"><label>Ajustes manuais (opcional)</label>
+        <textarea id="feet-manual" rows="2" placeholder="Adicione detalhes ou corrija o que a IA gerou..."></textarea>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('modal-char')">Cancelar</button>
+      <button class="btn btn-red" style="flex:2" id="save-char-btn" onclick="saveCharacter()">Salvar Personagem</button>
+    </div>
+  </div>
+</div>
+
+<!-- PAGE HISTORY MODAL -->
+<div id="modal-hist" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal('modal-hist')">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Histórico de Páginas</div>
+    <div id="page-hist-list"></div>
+    <button class="btn btn-ghost btn-full" style="margin-top:10px" onclick="closeModal('modal-hist')">Fechar</button>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SYSTEM PROMPTS — PROTOCOL EMBEDDED
+// ═══════════════════════════════════════════════════════════════
+
+const STORY_SYSTEM = `Você é o Comic Studio AI — simultaneamente roteirista profissional, diretor de arte cinematográfico e consultor de narrativa visual. Você trabalha em co-criação com o usuário para desenvolver histórias em quadrinhos adultas (18+) de alta qualidade.
+
+FASE ATUAL: DESENVOLVIMENTO DA HISTÓRIA
+
+REGRAS DESTA FASE:
+- Não gere prompts de imagem ainda. Foque 100% no desenvolvimento narrativo.
+- Quando o usuário descrever uma ideia, proponha: tom emocional, premissa central, conflito principal, e 2-3 arcos narrativos.
+- Faça perguntas estratégicas para aprofundar: Qual o nível de intimidade/explicitação? Qual o universo (contemporâneo, fantasia, etc)? O tom é mais psicológico ou físico?
+- Construa junto: proponha, o usuário ajusta, você refina.
+- Seja cinematográfico, maduro, literário. Histórias adultas com profundidade emocional real.
+- Quando a história estiver bem definida, sintetize em: [TÍTULO], [GÊNERO], [PREMISSA], [ARCOS], [TOM VISUAL].
+- Responda sempre em português brasileiro.
+- Máximo 250 palavras por resposta — seja denso e preciso.`;
+
+const CHAR_FEET_SYSTEM = `Você é especialista em análise de características físicas para criação de histórias em quadrinhos. Analise a imagem fornecida e crie uma Bíblia dos Pés detalhada para uso em prompts de IA generativa.
+
+Retorne APENAS o seguinte formato, sem introdução:
+TAMANHO: [estimativa em BR]
+FORMATO DOS DEDOS: [greek/roman/egyptian/square + descrição]
+ARCO PLANTAR: [high/high-medium/medium/low]
+LINHAS PLANTARES: [deep/subtle/visible + característica]
+VEIAS DORSAIS: [visible/subtle/prominent]
+PELE: [descrição da textura e aparência]
+UNHAS: [cor natural/esmalte estimado, formato, comprimento]
+ACESSÓRIOS: [tornozeleira/anel/nenhum visível]
+CARACTERÍSTICAS ÚNICAS: [dedos específicos, proporções, detalhes únicos]
+ESTADO GERAL: [condição dos pés — bem cuidados, naturais, etc]`;
+
+const FAMOUS_FEET_SYSTEM = `Você é especialista em características físicas de celebridades para criação de histórias em quadrinhos. Pesquise informações sobre os pés da pessoa solicitada e crie uma Bíblia dos Pés para uso em prompts de IA generativa.
+
+Retorne APENAS o seguinte formato:
+NOME: [nome completo]
+TAMANHO: [tamanho BR estimado baseado em pesquisa]
+FORMATO DOS DEDOS: [greek/roman/egyptian/square + descrição]
+ARCO PLANTAR: [high/high-medium/medium/low]
+LINHAS PLANTARES: [descrição]
+VEIAS DORSAIS: [visible/subtle]
+PELE: [descrição]
+UNHAS: [preferências conhecidas de esmalte, formato]
+ACESSÓRIOS: [preferências conhecidas — tornozeleira, etc]
+CARACTERÍSTICAS ÚNICAS: [características específicas conhecidas]
+FONTES: [aparições em eventos/fotos onde pés foram visíveis]`;
+
+const PRODUCTION_SYSTEM = `Você é o Comic Studio AI em modo PRODUÇÃO. Você é simultaneamente:
+- Roteirista profissional de HQ
+- Diretor de arte cinematográfico  
+- Prompt engineer especialista em IA generativa
+- Consultor de narrativa visual sequencial
+
+PROTOCOLO OFICIAL EMBUTIDO:
+
+ESTILO ARTÍSTICO OBRIGATÓRIO:
+Hyperrealistic digital painting, opaque gouache and digital oil technique. Painted illustration style — visible brushwork in shadows and textures, semi-transparent midtones, dry specular highlights. Dense natural color palette, zero artificial saturation, zero cartoon or anime appearance, zero 3D render look. Full comic page 2063x3150 pixels, vertical 2:3 ratio.
+
+HIPER-REALISMO NÍVEL ULTRA:
+- Pele: poros visíveis, oleosidade natural, imperfeições reais, vasos subcutâneos
+- Olhos: padrões únicos na íris, vasos na esclera, reflexos complexos, filme lacrimal
+- Cabelo: fios individualizados, flyaways, variação de cor raiz→ponta
+- Tecidos: textura de trama visível, peso natural, dobras realistas
+- Profundidade de campo seletiva: foco narrativo nítido, fundo com bokeh gradual
+- Três planos visuais em planos gerais
+
+LAYOUT ANTI-GRADE OBRIGATÓRIO:
+Nunca: 3 faixas iguais, 6 retângulos idênticos, grade simétrica uniforme.
+Sempre: 1 painel dominante + ao menos 1 inset flutuante + cortes irregulares/diagonais.
+
+BÍBLIA DOS PÉS: cada personagem tem pés únicos, individualizados, detalhados no prompt.
+
+REGRAS DE PERSONAGEM:
+- Originais: "must exactly match the reference model in the attached image"
+- Famosas: apenas o nome — o sistema reconhece automaticamente
+- NUNCA descrever características físicas gerais — apenas vestimenta, estado emocional e Bíblia dos Pés
+
+FORMATO DO PROMPT FINAL: ~500 palavras. Blocos: [FORMAT] [TECHNIQUE] [CORE NARRATIVE] [CONTEXT] [FEET BIBLE] [LIGHTING] [PAGE LAYOUT] [PANELS] [TEXT] [ATMOSPHERE] [FINAL INTENT] [DO NOT]
+
+FASE ATUAL: PRODUÇÃO PÁGINA A PÁGINA
+
+QUANDO SOLICITADO A GERAR OPÇÕES:
+Apresente EXATAMENTE 3 opções numeradas. Cada opção deve ter:
+- OPÇÃO [N]: [título evocativo]
+- O QUE ACONTECE: [2 linhas máximo]  
+- CLIMA: [tom emocional principal]
+- LAYOUT: [estrutura visual resumida]
+- TENSÃO: [o que o leitor vai sentir]
+
+Após o usuário escolher, gere o prompt completo seguindo o protocolo.
+
+QUANDO GERAR O PROMPT FINAL:
+Retorne o prompt completo entre as tags ===PROMPT_START=== e ===PROMPT_END===
+Inclua tudo: identidade, estilo, resolução, cena, personagens, pés, luz, layout, painéis, textos, atmosfera, proibições.
+
+Responda sempre em português. Seja cinematográfico, denso e preciso.`;
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+
+const DB_KEY = 'cs3_stories';
+
+function loadDB() {
+  try { return JSON.parse(localStorage.getItem(DB_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveDB(stories) {
+  try { localStorage.setItem(DB_KEY, JSON.stringify(stories)); } catch(e) {}
+}
+
+let stories = loadDB();
+let activeStory = null;  // current story object
+let editCharIdx = null;
+let pendingImageB64 = null;
+let selectedOption = null;
+let showFullProb = false;
+let lastGeneratedPrompt = '';
+let isSending = false;
+
+function getActiveStoryIdx() {
+  return stories.findIndex(s => s.id === activeStory?.id);
+}
+function persistActive() {
+  const idx = getActiveStoryIdx();
+  if (idx >= 0) stories[idx] = activeStory;
+  saveDB(stories);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+
+function showView(id) {
+  document.getElementById('view-home').style.display = 'none';
+  document.getElementById('view-studio').style.display = 'none';
+  document.getElementById(id).style.display = 'flex';
+}
+
+function goHome() {
+  persistActive();
+  activeStory = null;
+  showView('view-home');
+  renderStoryList();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// STORY LIST
+// ═══════════════════════════════════════════════════════════════
+
+function renderStoryList() {
+  const el = document.getElementById('story-list');
+  if (!stories.length) {
+    el.innerHTML = `<div class="empty-state"><div class="ei">📖</div><h3>Nenhuma história ainda</h3><p>Toque em "+ Nova" para começar a co-criar sua HQ com a IA</p></div>`;
+    return;
+  }
+  el.innerHTML = stories.map((s, i) => `
+    <div class="story-item" onclick="openStory(${i})">
+      <div class="fbetween">
+        <div class="si-title">${s.title || 'Sem título'}</div>
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteStory(${i})" style="padding:4px 8px">🗑️</button>
+      </div>
+      <div class="si-meta">${s.genre || '—'} · ${s.pages?.length || 0} páginas · ${formatDate(s.updatedAt)}</div>
+      <span class="si-status ${s.phase >= 3 ? 'sis-active' : 'sis-draft'}">${s.phase >= 3 ? 'Em produção' : s.phase === 2 ? 'Definindo elenco' : 'Desenvolvendo'}</span>
+    </div>
+  `).join('') + `<div style="padding:8px 0"><button class="btn btn-ghost btn-full" onclick="exportAll()">⬇ Exportar todas as histórias</button></div>`;
+}
+
+function formatDate(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleDateString('pt-BR');
+}
+
+function deleteStory(i) {
+  if (confirm(`Excluir "${stories[i].title || 'esta história'}"?`)) {
+    stories.splice(i, 1);
+    saveDB(stories);
+    renderStoryList();
+    toast('História excluída');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CREATE / OPEN STORY
+// ═══════════════════════════════════════════════════════════════
+
+function newStory() {
+  const story = {
+    id: Date.now(),
+    title: '',
+    genre: '',
+    synopsis: '',
+    phase: 1,
+    storyChat: [],
+    characters: [],
+    pages: [],
+    currentPageNum: 1,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  };
+  stories.unshift(story);
+  saveDB(stories);
+  activeStory = story;
+  openStudioPhase(1);
+  showView('view-studio');
+
+  // Initial AI greeting
+  const greeting = { role: 'assistant', content: `Olá! Sou o Comic Studio AI — seu roteirista, diretor de arte e co-criador.\n\nVamos desenvolver sua história. Me diga: **qual é a ideia?** Pode ser só um feeling, uma cena, um tema, um tipo de relação entre personagens. Qualquer ponto de partida serve.\n\nPor exemplo: *"quero uma história adulta com fetiche por pés, dois personagens femininos, clima tenso e íntimo"* — e a partir daí construímos juntos.` };
+  activeStory.storyChat.push(greeting);
+  persistActive();
+  renderStoryChat();
+}
+
+function openStory(i) {
+  activeStory = JSON.parse(JSON.stringify(stories[i]));
+  openStudioPhase(activeStory.phase);
+  showView('view-studio');
+}
+
+function openStudioPhase(phase) {
+  // Hide all phases
+  ['phase-story','phase-chars','phase-production'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  document.getElementById('chat-bar').style.display = 'none';
+  document.getElementById('options-action-bar').style.display = 'none';
+
+  // Update phase bar
+  updatePhaseBar(phase);
+
+  if (phase === 1) {
+    document.getElementById('phase-story').style.display = 'block';
+    document.getElementById('chat-bar').style.display = 'flex';
+    document.getElementById('p1-title').textContent = activeStory.title || 'Nova História';
+    renderStoryChat();
+    setTimeout(() => scrollChatBottom('chat-story'), 100);
+  } else if (phase === 2) {
+    document.getElementById('phase-chars').style.display = 'block';
+    renderCharListPhase2();
+  } else if (phase === 3) {
+    document.getElementById('phase-production').style.display = 'block';
+    document.getElementById('chat-bar').style.display = 'flex';
+    document.getElementById('p3-title').textContent = activeStory.title || 'Produção';
+    renderProductionView();
+  }
+}
+
+function updatePhaseBar(phase) {
+  const labels = ['', 'Fase 1 — História', 'Fase 2 — Elenco', 'Fase 3 — Produção', 'Fase 3 — Produção'];
+  document.getElementById('phase-label').textContent = labels[phase] || '';
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('ps-' + i);
+    if (!el) continue;
+    el.className = 'phase-step ' + (i < phase ? 'done' : i === phase ? 'active' : '');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE 1 — STORY DEVELOPMENT
+// ═══════════════════════════════════════════════════════════════
+
+function renderStoryChat() {
+  const el = document.getElementById('chat-story');
+  if (!activeStory?.storyChat?.length) { el.innerHTML = ''; return; }
+  el.innerHTML = activeStory.storyChat.map(m => `
+    <div class="bubble ${m.role === 'user' ? 'bubble-user' : 'bubble-ai'}">
+      <div class="bub-label">${m.role === 'user' ? 'Você' : 'Comic Studio AI'}</div>
+      ${formatBubble(m.content)}
+    </div>
+  `).join('');
+
+  // Check if story is defined — show "advance" button
+  const hasStructure = activeStory.storyChat.some(m =>
+    m.role === 'assistant' && (m.content.includes('[TÍTULO]') || m.content.includes('[GÊNERO]') || m.content.includes('TÍTULO:'))
+  );
+  if (hasStructure && activeStory.phase === 1) {
+    const existing = el.querySelector('.advance-btn');
+    if (!existing) {
+      const btn = document.createElement('div');
+      btn.className = 'advance-btn';
+      btn.style.cssText = 'padding:4px 0';
+      btn.innerHTML = `<button class="btn btn-gold btn-full" onclick="advanceToChars()">História aprovada — Definir elenco →</button>`;
+      el.appendChild(btn);
+    }
+  }
+}
+
+function formatBubble(text) {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 110) + 'px';
+}
+
+async function sendMessage() {
+  if (isSending) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; input.style.height = '42px';
+  isSending = true;
+  setBtnLoading(true);
+
+  const phase = activeStory.phase;
+  const chatKey = phase === 1 ? 'storyChat' : 'productionChat';
+  if (!activeStory[chatKey]) activeStory[chatKey] = [];
+
+  activeStory[chatKey].push({ role: 'user', content: text });
+  persistActive();
+
+  if (phase === 1) renderStoryChat();
+  else renderProductionChat();
+
+  // Add loading bubble
+  addLoadingBubble(phase === 1 ? 'chat-story' : 'production-chat');
+
+  try {
+    const sysPrompt = phase === 1 ? STORY_SYSTEM : buildProductionSystem();
+    const messages = activeStory[chatKey].map(m => ({ role: m.role, content: m.content }));
+
+    const res = await callClaude(sysPrompt, messages);
+    const reply = res.content?.[0]?.text || 'Erro na resposta.';
+
+    activeStory[chatKey].push({ role: 'assistant', content: reply });
+
+    // Parse story structure if phase 1
+    if (phase === 1) parseStoryStructure(reply);
+
+    // Parse options if phase 3
+    if (phase === 3) checkForOptions(reply);
+
+    // Parse final prompt
+    if (reply.includes('===PROMPT_START===')) extractAndShowPrompt(reply);
+
+    persistActive();
+    if (phase === 1) renderStoryChat();
+    else renderProductionChat();
+    setTimeout(() => scrollChatBottom(phase === 1 ? 'chat-story' : 'production-chat'), 100);
+
+  } catch(e) {
+    const errMsg = { role: 'assistant', content: 'Erro de conexão. Verifique sua internet e tente novamente.' };
+    activeStory[chatKey].push(errMsg);
+    if (phase === 1) renderStoryChat(); else renderProductionChat();
+  }
+
+  isSending = false;
+  setBtnLoading(false);
+}
+
+function setBtnLoading(loading) {
+  const btn = document.getElementById('send-btn');
+  btn.className = 'send-btn' + (loading ? ' loading' : '');
+  btn.textContent = loading ? '…' : '➤';
+}
+
+function addLoadingBubble(containerId) {
+  const el = document.getElementById(containerId);
+  const loader = document.createElement('div');
+  loader.id = 'loading-bubble';
+  loader.className = 'bubble bubble-ai';
+  loader.innerHTML = '<div class="bub-label">Comic Studio AI</div><div class="dots"><span></span><span></span><span></span></div>';
+  el.appendChild(loader);
+  el.scrollTop = el.scrollHeight;
+}
+
+function parseStoryStructure(text) {
+  const getVal = (key) => {
+    const m = text.match(new RegExp(`\\[${key}\\][:\\s]+([^\\n\\[]+)`,'i'));
+    return m ? m[1].trim() : null;
+  };
+  const title = getVal('TÍTULO') || getVal('TITULO');
+  const genre = getVal('GÊNERO') || getVal('GENERO');
+  const synopsis = getVal('PREMISSA') || getVal('SINOPSE');
+  if (title) { activeStory.title = title; document.getElementById('p1-title').textContent = title; }
+  if (genre) activeStory.genre = genre;
+  if (synopsis) activeStory.synopsis = synopsis;
+}
+
+function scrollChatBottom(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollTop = el.scrollHeight;
+  // Remove loading bubble
+  const lb = document.getElementById('loading-bubble');
+  if (lb) lb.remove();
+}
+
+function advanceToChars() {
+  activeStory.phase = 2;
+  persistActive();
+  openStudioPhase(2);
+  toast('Avançando para definição de elenco!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE 2 — CHARACTERS
+// ═══════════════════════════════════════════════════════════════
+
+function renderCharListPhase2() {
+  const el = document.getElementById('char-list-phase2');
+  if (!activeStory.characters.length) {
+    el.innerHTML = `<div class="empty-state" style="padding:24px 0"><div class="ei">👤</div><h3>Nenhum personagem ainda</h3><p>Adicione os personagens da história</p></div>`;
+  } else {
+    el.innerHTML = activeStory.characters.map((c, i) => {
+      const f = c.feetBible;
+      const hasFeet = f && f.length > 50;
+      return `
+        <div class="char-card">
+          <div class="fbetween">
+            <div>
+              <div class="char-name">${c.name}</div>
+              <div class="char-role">${c.type === 'famous' ? '⭐ ' + (c.famousName||'Famosa') : '👤 Original'} · ${c.role}</div>
+            </div>
+            <div class="fbc gap8">
+              <button class="btn btn-ghost btn-sm" onclick="openCharModal(${i})">✏️</button>
+              <button class="btn btn-ghost btn-sm" onclick="deleteChar(${i})">🗑️</button>
+            </div>
+          </div>
+          <span class="char-feet-badge ${hasFeet ? 'cfb-ok' : 'cfb-warn'}">
+            ${hasFeet ? '✓ Bíblia dos Pés pronta' : '⚠ Pés não definidos'}
+          </span>
+          ${c.outfit ? `<div style="font-size:11px;color:var(--muted);margin-top:6px">👗 ${c.outfit.substring(0,70)}...</div>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Outfit section — generate automatically based on story
+  renderOutfitSection();
+}
+
+function renderOutfitSection() {
+  const el = document.getElementById('outfit-section');
+  if (!activeStory.characters.length) { el.innerHTML = ''; return; }
+  el.innerHTML = activeStory.characters.map((c, i) => `
+    <div class="card mb8">
+      <div class="card-title">👗 ${c.name} — Figurino</div>
+      <div class="field"><label>Vestimenta principal</label>
+        <textarea rows="2" placeholder="A IA vai sugerir com base na história..." onchange="activeStory.characters[${i}].outfit=this.value;persistActive()">${c.outfit || ''}</textarea>
+      </div>
+      ${!c.outfit ? `<button class="btn btn-surface btn-sm" onclick="generateOutfit(${i})">✨ Gerar figurino com IA</button>` : ''}
+    </div>
+  `).join('');
+}
+
+async function generateOutfit(charIdx) {
+  const c = activeStory.characters[charIdx];
+  const storyContext = activeStory.synopsis || activeStory.storyChat.slice(-4).map(m => m.content).join('\n');
+  toast('Gerando figurino...');
+  try {
+    const res = await callClaude(
+      `Você é figurinista de HQ. Com base na história e no personagem, crie um figurino detalhado para uso em prompts de IA. Retorne APENAS a descrição do figurino em inglês, sem introdução. Máximo 2 linhas.`,
+      [{ role: 'user', content: `História: ${storyContext}\nPersonagem: ${c.name}, ${c.role}, tom: ${c.tone || 'não especificado'}\nCrie um figurino específico e coerente.` }]
+    );
+    const outfit = res.content?.[0]?.text?.trim() || '';
+    activeStory.characters[charIdx].outfit = outfit;
+    persistActive();
+    renderOutfitSection();
+    toast('Figurino gerado!');
+  } catch(e) { toast('Erro ao gerar figurino', 'err'); }
+}
+
+function openCharModal(idx = null) {
+  editCharIdx = idx;
+  pendingImageB64 = null;
+  document.getElementById('modal-char-title').textContent = idx !== null ? 'Editar Personagem' : 'Novo Personagem';
+  document.getElementById('feet-loading').style.display = 'none';
+  document.getElementById('feet-result').style.display = 'none';
+  document.getElementById('feet-result-content').innerHTML = '';
+  document.getElementById('ref-preview').style.display = 'none';
+
+  if (idx !== null) {
+    const c = activeStory.characters[idx];
+    document.getElementById('cn').value = c.name || '';
+    document.getElementById('ct').value = c.type || 'original';
+    document.getElementById('cfamous').value = c.famousName || '';
+    document.getElementById('crole').value = c.role || 'protagonista';
+    document.getElementById('ctone').value = c.tone || '';
+    document.getElementById('feet-manual').value = c.feetManual || '';
+    if (c.feetBible) {
+      document.getElementById('feet-result').style.display = 'block';
+      document.getElementById('feet-result-content').innerHTML = c.feetBible.replace(/\n/g,'<br>');
+    }
+    toggleCharType();
+  } else {
+    ['cn','cfamous','ctone','feet-manual'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('ct').value = 'original';
+    document.getElementById('crole').value = 'protagonista';
+    toggleCharType();
+  }
+  document.getElementById('modal-char').style.display = 'flex';
+}
+
+function toggleCharType() {
+  const isFamous = document.getElementById('ct').value === 'famous';
+  document.getElementById('famous-field').style.display = isFamous ? 'block' : 'none';
+  document.getElementById('original-field').style.display = isFamous ? 'none' : 'block';
+}
+
+async function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async (ev) => {
+    const b64 = ev.target.result.split(',')[1];
+    const mediaType = file.type;
+    document.getElementById('ref-preview').src = ev.target.result;
+    document.getElementById('ref-preview').style.display = 'block';
+    pendingImageB64 = { data: b64, mediaType };
+    await analyzeFeetImage(b64, mediaType);
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeFeetImage(b64, mediaType) {
+  document.getElementById('feet-loading').style.display = 'block';
+  document.getElementById('feet-result').style.display = 'none';
+  try {
+    const key = localStorage.getItem('cs_apikey') || '';
+    if (!key) throw new Error('API Key não configurada');
+    const hdrs = {'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'};
+    const bdy = JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system: CHAR_FEET_SYSTEM, messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: mediaType, data: b64 } }, { type: 'text', text: 'Analise a imagem e crie a Bíblia dos Pés desta pessoa para uso em prompts de IA generativa.' }] }] });
+    let data;
+    try {
+      const r = await fetch('https://api.anthropic.com/v1/messages', {method:'POST', headers:hdrs, body:bdy});
+      data = await r.json();
+    } catch(e) {
+      const r = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.anthropic.com/v1/messages'), {method:'POST', headers:hdrs, body:bdy});
+      data = await r.json();
+    }
+    const bible = data.content?.[0]?.text || '';
+    document.getElementById('feet-loading').style.display = 'none';
+    document.getElementById('feet-result').style.display = 'block';
+    document.getElementById('feet-result-content').innerHTML = bible.replace(/\n/g,'<br>');
+    document.getElementById('feet-result-content').dataset.raw = bible;
+    toast('Bíblia dos Pés criada pela IA!', 'ok');
+  } catch(e) {
+    document.getElementById('feet-loading').style.display = 'none';
+    toast('Erro ao analisar imagem', 'err');
+  }
+}
+
+async function analyzeFamousFeet(name) {
+  document.getElementById('feet-loading').style.display = 'block';
+  document.getElementById('feet-result').style.display = 'none';
+  try {
+    const res = await callClaudeWithSearch(
+      FAMOUS_FEET_SYSTEM,
+      [{ role: 'user', content: `Crie a Bíblia dos Pés de ${name} para uso em prompts de IA generativa. Pesquise informações reais sobre as características dos pés desta pessoa.` }]
+    );
+    const bible = res.content?.filter(b => b.type === 'text').map(b => b.text).join('') || '';
+    document.getElementById('feet-loading').style.display = 'none';
+    document.getElementById('feet-result').style.display = 'block';
+    document.getElementById('feet-result-content').innerHTML = bible.replace(/\n/g,'<br>');
+    document.getElementById('feet-result-content').dataset.raw = bible;
+    toast('Bíblia dos Pés pesquisada!', 'ok');
+  } catch(e) {
+    document.getElementById('feet-loading').style.display = 'none';
+    toast('Erro ao pesquisar', 'err');
+  }
+}
+
+function saveCharacter() {
+  const name = document.getElementById('cn').value.trim();
+  if (!name) return toast('Nome obrigatório', 'err');
+
+  const type = document.getElementById('ct').value;
+  const famousName = document.getElementById('cfamous').value.trim();
+
+  if (type === 'famous' && famousName && !document.getElementById('feet-result-content').dataset.raw) {
+    // Trigger famous feet research first
+    analyzeFamousFeet(famousName).then(() => {
+      doSaveCharacter(name, type, famousName);
+    });
+    return;
+  }
+  doSaveCharacter(name, type, famousName);
+}
+
+function doSaveCharacter(name, type, famousName) {
+  const feetRaw = document.getElementById('feet-result-content').dataset.raw || '';
+  const feetManual = document.getElementById('feet-manual').value;
+  const char = {
+    name, type, famousName,
+    role: document.getElementById('crole').value,
+    tone: document.getElementById('ctone').value,
+    outfit: editCharIdx !== null ? activeStory.characters[editCharIdx].outfit || '' : '',
+    feetBible: feetRaw,
+    feetManual,
+    imageB64: pendingImageB64
+  };
+  if (editCharIdx !== null) activeStory.characters[editCharIdx] = char;
+  else activeStory.characters.push(char);
+  persistActive();
+  closeModal('modal-char');
+  renderCharListPhase2();
+  toast('Personagem salvo!');
+}
+
+function deleteChar(i) {
+  if (confirm('Excluir personagem?')) {
+    activeStory.characters.splice(i, 1);
+    persistActive();
+    renderCharListPhase2();
+  }
+}
+
+function completePhase2() {
+  if (!activeStory.characters.length) return toast('Adicione ao menos um personagem', 'err');
+  activeStory.phase = 3;
+  if (!activeStory.productionChat) activeStory.productionChat = [];
+  if (!activeStory.pages) activeStory.pages = [];
+  activeStory.currentPageNum = 1;
+  persistActive();
+  openStudioPhase(3);
+  // Auto-request first 3 options
+  setTimeout(() => requestOptions(), 400);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PHASE 3 — PRODUCTION
+// ═══════════════════════════════════════════════════════════════
+
+function buildProductionSystem() {
+  const chars = activeStory.characters.map(c => {
+    let info = `PERSONAGEM: ${c.name} (${c.type === 'famous' ? 'Famosa: ' + c.famousName : 'Original — modelo em anexo'})\n`;
+    info += `Papel: ${c.role} | Tom: ${c.tone || 'não definido'}\n`;
+    if (c.outfit) info += `Figurino: ${c.outfit}\n`;
+    if (c.feetBible) info += `BÍBLIA DOS PÉS:\n${c.feetBible}\n`;
+    if (c.feetManual) info += `Ajustes adicionais nos pés: ${c.feetManual}\n`;
+    return info;
+  }).join('\n---\n');
+
+  const storyContext = `HISTÓRIA: ${activeStory.title}\nGênero: ${activeStory.genre}\nSinopse: ${activeStory.synopsis || 'Ver chat de desenvolvimento'}\n`;
+  const prevPage = activeStory.pages.length > 0 ? activeStory.pages[activeStory.pages.length - 1] : null;
+  const prevContext = prevPage ? `\nÚLTIMA PÁGINA GERADA (Página ${prevPage.num}):\n${prevPage.summary || prevPage.prompt?.substring(0, 300) + '...'}` : '';
+
+  return PRODUCTION_SYSTEM + `\n\n═══════════════════════\nDADOS DESTA PRODUÇÃO:\n═══════════════════════\n${storyContext}\n${chars}${prevContext}\n\nPÁGINA ATUAL: ${activeStory.currentPageNum}`;
+}
+
+function renderProductionView() {
+  document.getElementById('p3-sub').textContent = `Página ${activeStory.currentPageNum}`;
+
+  // Show previous page summary
+  const prevPage = activeStory.pages.length > 0 ? activeStory.pages[activeStory.pages.length - 1] : null;
+  if (prevPage) {
+    document.getElementById('prev-page-summary').style.display = 'block';
+    document.getElementById('prev-page-content').innerHTML = `<b>Página ${prevPage.num}:</b> ${prevPage.summary || 'Sem resumo'}<br><span class="mono" style="font-size:10px">${prevPage.words || 0} palavras geradas</span>`;
+  }
+
+  renderProductionChat();
+  document.getElementById('prompt-section').style.display = 'none';
+  document.getElementById('options-action-bar').style.display = 'none';
+}
+
+function renderProductionChat() {
+  const el = document.getElementById('production-chat');
+  const chat = activeStory.productionChat || [];
+  if (!chat.length) { el.innerHTML = ''; return; }
+
+  let html = '';
+  chat.forEach((m, i) => {
+    // Check if this is an options message
+    if (m.role === 'assistant' && m.content.includes('OPÇÃO 1') || (m.options)) {
+      html += renderOptionsCard(m);
+    } else {
+      html += `<div class="bubble ${m.role === 'user' ? 'bubble-user' : 'bubble-ai'}" style="margin-bottom:10px">
+        <div class="bub-label">${m.role === 'user' ? 'Você' : 'Comic Studio AI'}</div>
+        ${formatBubble(m.content.replace(/===PROMPT_START===[\s\S]*?===PROMPT_END===/g, '[prompt gerado abaixo]'))}
+      </div>`;
+    }
+  });
+  el.innerHTML = html;
+
+  // Re-attach selection handlers
+  document.querySelectorAll('.option-card').forEach(card => {
+    card.addEventListener('click', function() {
+      const opt = parseInt(this.dataset.opt);
+      selectOption(opt);
+    });
+  });
+}
+
+function renderOptionsCard(m) {
+  const opts = parseOptions(m.content);
+  if (!opts.length) {
+    return `<div class="bubble bubble-ai" style="margin-bottom:10px"><div class="bub-label">Comic Studio AI</div>${formatBubble(m.content)}</div>`;
+  }
+  return `
+    <div style="margin-bottom:12px">
+      <div class="bub-label" style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-bottom:8px">Comic Studio AI — 3 opções para Página ${activeStory.currentPageNum}</div>
+      ${opts.map((o, i) => `
+        <div class="option-card ${selectedOption === i+1 ? 'selected' : ''}" data-opt="${i+1}">
+          <div class="fbc gap8 mb8">
+            <div class="opt-num">${i+1}</div>
+            <div class="opt-title">${o.title}</div>
+          </div>
+          <div class="opt-climate">${o.climate}</div>
+          <div class="opt-desc">${o.desc}</div>
+          <div class="opt-layout">📐 ${o.layout}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function parseOptions(text) {
+  const opts = [];
+  const optBlocks = text.split(/OPÇÃO\s+\d+[:\s]/i).filter(Boolean);
+  optBlocks.forEach(block => {
+    const titleMatch = block.match(/^([^\n]+)/);
+    const whatMatch = block.match(/O QUE ACONTECE[:\s]+([^\n]+(?:\n[^\n]+)?)/i);
+    const climateMatch = block.match(/CLIMA[:\s]+([^\n]+)/i);
+    const layoutMatch = block.match(/LAYOUT[:\s]+([^\n]+)/i);
+    const tensionMatch = block.match(/TENSÃO[:\s]+([^\n]+)/i);
+    if (titleMatch) {
+      opts.push({
+        title: titleMatch[1].trim().replace(/[*_]/g,''),
+        desc: whatMatch ? whatMatch[1].trim() : '',
+        climate: climateMatch ? climateMatch[1].trim() : '',
+        layout: layoutMatch ? layoutMatch[1].trim() : '',
+        tension: tensionMatch ? tensionMatch[1].trim() : ''
+      });
+    }
+  });
+  return opts.slice(0, 3);
+}
+
+function selectOption(num) {
+  selectedOption = num;
+  document.querySelectorAll('.option-card').forEach(card => {
+    card.classList.toggle('selected', parseInt(card.dataset.opt) === num);
+    card.querySelector('.opt-num').style.background = parseInt(card.dataset.opt) === num ? 'var(--gold)' : '';
+    card.querySelector('.opt-num').style.color = parseInt(card.dataset.opt) === num ? '#1a0a00' : '';
+  });
+  document.getElementById('options-action-bar').style.display = 'block';
+}
+
+function confirmOption() {
+  if (!selectedOption) return toast('Escolha uma opção primeiro', 'err');
+  const userMsg = `Escolhi a Opção ${selectedOption}. Gere o prompt completo para esta página seguindo o protocolo oficial.`;
+  document.getElementById('chat-input').value = userMsg;
+  document.getElementById('options-action-bar').style.display = 'none';
+  sendMessage();
+  selectedOption = null;
+}
+
+async function requestOptions() {
+  if (!activeStory.productionChat) activeStory.productionChat = [];
+  const prevPage = activeStory.pages.length > 0 ? activeStory.pages[activeStory.pages.length - 1] : null;
+  const msg = prevPage
+    ? `Página ${activeStory.currentPageNum}. Apresente as 3 opções para esta página, mantendo continuidade perfeita com a Página ${prevPage.num}.`
+    : `Estamos começando a produção. Apresente as 3 opções para a Página 1 da história.`;
+
+  activeStory.productionChat.push({ role: 'user', content: msg });
+  persistActive();
+  renderProductionChat();
+  addLoadingBubble('production-chat');
+
+  try {
+    const res = await callClaude(buildProductionSystem(), activeStory.productionChat.map(m => ({ role: m.role, content: m.content })));
+    const reply = res.content?.[0]?.text || '';
+    activeStory.productionChat.push({ role: 'assistant', content: reply });
+    persistActive();
+    scrollChatBottom('production-chat');
+    renderProductionChat();
+    setTimeout(() => scrollChatBottom('production-chat'), 50);
+  } catch(e) {
+    scrollChatBottom('production-chat');
+    toast('Erro de conexão', 'err');
+  }
+}
+
+function checkForOptions(reply) {
+  if (reply.includes('OPÇÃO 1') || reply.includes('OPÇÃO 2')) {
+    document.getElementById('options-action-bar').style.display = 'none';
+    selectedOption = null;
+  }
+}
+
+function extractAndShowPrompt(text) {
+  const match = text.match(/===PROMPT_START===([\s\S]+?)===PROMPT_END===/);
+  if (!match) return;
+  let prompt = match[1].trim();
+
+  // Append prohibitions
+  if (!prompt.includes('[DO NOT]')) {
+    prompt += `\n\n[DO NOT]\nDo NOT use: cartoon, anime, manga, cel shading, flat colors, 3D render, CGI aesthetics, airbrush smoothness, uniform grid layout, torn panel borders, equal-sized panels, porcelain skin, doll eyes, glassy iris, generic identical feet, rubber plantar texture, flat nail rectangles, solid hair mass, stock expressions, flat ambient lighting, generic backgrounds, single-plane composition.`;
+  }
+
+  lastGeneratedPrompt = prompt;
+  const words = prompt.trim().split(/\s+/).length;
+
+  document.getElementById('prompt-output').textContent = prompt;
+  document.getElementById('prompt-section').style.display = 'block';
+  document.getElementById('prompt-pg-num').textContent = activeStory.currentPageNum;
+  updateWordPill(words);
+  document.getElementById('prompt-section').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('prod-word-pill').style.display = 'inline-flex';
+  updateWordPill(words);
+}
+
+function updateWordPill(n) {
+  const cls = n < 250 ? 'wp-warn' : n <= 650 ? 'wp-ok' : 'wp-over';
+  const txt = n < 250 ? `${n} pal. — curto` : n <= 650 ? `${n} pal. ✓` : `${n} pal. — longo!`;
+  ['prod-word-pill','prompt-word-pill'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'word-pill ' + cls;
+    el.textContent = txt;
+  });
+}
+
+function toggleFullProb() {
+  showFullProb = !showFullProb;
+  const btn = document.getElementById('prob-toggle');
+  btn.textContent = showFullProb ? '− Proibições completas (ativo)' : '+ Proibições completas';
+  btn.className = showFullProb ? 'btn btn-surface btn-sm' : 'btn btn-ghost btn-sm';
+
+  if (showFullProb && lastGeneratedPrompt) {
+    const extra = `\n\nDo NOT render porcelain, plastic or wax skin — visible pores, natural sebum, real imperfections mandatory. Do NOT smooth skin texture. Do NOT create idealized flawless skin. Do NOT make faces perfectly symmetric.\nDo NOT render doll eyes — iris must have radial striations, complex reflections in pupil, sclera vessels visible. Do NOT flatten iris to solid color disc.\nDo NOT render generic feet — unique plantar arch, metatarsal volume, individualized toes, Feet Bible specifications mandatory. Do NOT create rubber sole texture. Do NOT paint nails as flat rectangles.\nDo NOT render hair as solid mass — individualized strands, flyaways, root-to-tip variation required.\nDo NOT use flat ambient lighting — defined source direction mandatory. Do NOT change light direction between panels of same scene.\nDo NOT use stock expressions — muscle tension, microexpressions required.`;
+    document.getElementById('prompt-output').textContent = lastGeneratedPrompt + extra;
+  } else if (lastGeneratedPrompt) {
+    document.getElementById('prompt-output').textContent = lastGeneratedPrompt;
+  }
+}
+
+function copyPrompt() {
+  const text = document.getElementById('prompt-output').textContent;
+  navigator.clipboard.writeText(text)
+    .then(() => toast('Prompt copiado!'))
+    .catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); toast('Prompt copiado!'); } catch(e) { toast('Erro ao copiar', 'err'); }
+      document.body.removeChild(ta);
+    });
+}
+
+function savePageAndContinue() {
+  const prompt = document.getElementById('prompt-output').textContent;
+  const words = prompt.trim().split(/\s+/).length;
+  const pgNum = activeStory.currentPageNum;
+
+  // Extract summary from production chat
+  const lastMsg = activeStory.productionChat?.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
+  const summary = lastMsg.substring(0, 150).replace(/\n/g,' ') + '...';
+
+  activeStory.pages.push({ num: pgNum, prompt, words, summary, createdAt: Date.now() });
+  activeStory.currentPageNum = pgNum + 1;
+  activeStory.updatedAt = Date.now();
+  persistActive();
+
+  // Reset for next page
+  document.getElementById('prompt-section').style.display = 'none';
+  document.getElementById('prod-word-pill').style.display = 'none';
+  lastGeneratedPrompt = '';
+  showFullProb = false;
+  document.getElementById('prob-toggle').textContent = '+ Proibições completas';
+  document.getElementById('prob-toggle').className = 'btn btn-ghost btn-sm';
+  selectedOption = null;
+
+  renderProductionView();
+  toast(`Página ${pgNum} salva! Gerando opções para Página ${pgNum + 1}...`);
+  setTimeout(() => requestOptions(), 600);
+}
+
+function showPageHistory() {
+  const el = document.getElementById('page-hist-list');
+  if (!activeStory.pages.length) {
+    el.innerHTML = '<div class="empty-state"><div class="ei">📋</div><h3>Nenhuma página ainda</h3></div>';
+  } else {
+    el.innerHTML = activeStory.pages.map((p, i) => `
+      <div class="page-hist-item">
+        <div class="phi-pg">Página ${p.num} · ${new Date(p.createdAt).toLocaleString('pt-BR')}</div>
+        <div class="phi-desc">${p.summary}</div>
+        <div class="phi-words mono">${p.words} palavras</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="copyHistPage(${i})">📋 Copiar prompt</button>
+      </div>
+    `).reverse().join('');
+  }
+  document.getElementById('modal-hist').style.display = 'flex';
+}
+
+function copyHistPage(i) {
+  navigator.clipboard.writeText(activeStory.pages[i].prompt)
+    .then(() => toast('Copiado!'))
+    .catch(() => toast('Erro', 'err'));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// API CALLS
+// ═══════════════════════════════════════════════════════════════
+
+function getKey() { return localStorage.getItem('cs_apikey') || ''; }
+
+async function callClaude(system, messages, extra = {}) {
+  const key = getKey();
+  if (!key) throw new Error('API Key não configurada. Toque em ⚙️ para configurar.');
+  const body = { model: 'claude-sonnet-4-6', max_tokens: 1000, system, messages, ...extra };
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': key,
+    'anthropic-version': '2023-06-01',
+    'anthropic-beta': 'web-search-2025-03-05'
+  };
+  // Try direct first (works on GitHub Pages / any HTTPS host)
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers, body: JSON.stringify(body) });
+    if (r.ok) return await r.json();
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.error?.message || 'API error ' + r.status);
+  } catch(e) {
+    // Fallback CORS proxy
+    try {
+      const r = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.anthropic.com/v1/messages'), { method: 'POST', headers, body: JSON.stringify(body) });
+      if (r.ok) return await r.json();
+      throw new Error('API error via proxy: ' + r.status);
+    } catch(e2) {
+      throw new Error('Erro de conexão. Verifique sua API Key em ⚙️');
+    }
+  }
+}
+
+async function callClaudeWithSearch(system, messages) {
+  return callClaude(system, messages, { tools: [{ type: 'web_search_20250305', name: 'web_search' }] });
+}
+async function callClaudeWithSearch_REMOVED(system, messages) {
+  const key = localStorage.getItem('cs_apikey') || '';
+  if (!key) throw new Error('API Key não configurada');
+  const headers = {'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-beta':'web-search-2025-03-05'};
+  const body = JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 1000, system, messages, tools: [{ type: 'web_search_20250305', name: 'web_search' }] });
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {method:'POST', headers, body});
+    if (r.ok) return await r.json();
+    throw new Error('direct failed');
+  } catch(e) {
+    const r = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.anthropic.com/v1/messages'), {method:'POST', headers, body});
+    if (!r.ok) throw new Error('API error ' + r.status);
+    return await r.json();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODALS & TOAST
+// ═══════════════════════════════════════════════════════════════
+
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast ' + type; t.classList.add('show');
+  clearTimeout(t._timeout);
+  t._timeout = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════════
+
+function exportAll() {
+  const blob = new Blob([JSON.stringify(stories, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'comic-studio-backup.json'; a.click();
+  toast('Exportado!');
+}
+
+
+function showSetup() {
+  document.getElementById('v-setup').style.display = 'flex';
+}
+function hideSetup() {
+  document.getElementById('v-setup').style.display = 'none';
+}
+function saveSetupKey() {
+  const k = document.getElementById('setup-key').value.trim();
+  if (!k.startsWith('sk-ant-')) { alert('Key inválida — deve começar com sk-ant-'); return; }
+  localStorage.setItem('cs_apikey', k);
+  hideSetup();
+  toast('API Key salva!');
+}
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+
+document.getElementById('story-input')?.addEventListener('keydown', handleKey);
+document.addEventListener('DOMContentLoaded', () => {
+  renderStoryList();
+  showView('view-home');
+  if (!localStorage.getItem('cs_apikey')) showSetup();
+});
+renderStoryList();
+if (!localStorage.getItem('cs_apikey')) showSetup();
+</script>
+</body>
+</html>
